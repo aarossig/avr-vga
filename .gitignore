@@ -1,0 +1,6 @@
+# Ignore binary files
+*.hex
+*.elf
+*.bin
+*.o
+*.out.s

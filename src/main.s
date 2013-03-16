@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-; Embedded Demo Platform
+; ATmega VGA Generator
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,16 +55,10 @@ __timer3_ovf:   jmp default_interrupt
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; VGA Variables
-.equ LINE_COUNTER, 0x0100 ; The current line that the processor is drawing
-
 ; Frame Buffer Variables
 .equ FRAME_BUFFER, 0x0200 ; The beginning of the 128 * 96 frame buffer
-.equ LINE_WIDTH, 128
 
 ; VGA Generation Constants
-.equ V_LOWLINE, 492
-.equ V_HIGHLINE, 494
 .equ TOTAL_LINES, 524
 .equ START_PIXELS, 48
 
@@ -81,10 +75,6 @@ __timer3_ovf:   jmp default_interrupt
 ; Frame Buffer Parameters
 .equ FB_WIDTH, 128
 .equ FB_HEIGHT, 96
-
-; Audio Pins
-.equ LCH, 3
-.equ RCH, 4
 
 ; Status LEDs
 .equ SUCCESS0, 6
@@ -121,7 +111,7 @@ main:
 	sbi PORTD, SUCCESS0
 	
 	; Configure signal outputs
-	ldi r16, (1 << HSYNC) | (1 << VSYNC) | (1 << LCH) | (1 << RCH)
+	ldi r16, (1 << HSYNC) | (1 << VSYNC)
 	out DDRB, r16
 	
 	; Enable the video output
@@ -132,19 +122,12 @@ main:
 	sbi PORTB, HSYNC
 	sbi PORTB, VSYNC
 	
-	; Configure Timer 0 for audio playback
-	ldi r16, (1 << COM0A1) | (1 << COM0B1) | (1 << WGM01) | (1 << WGM00)
-	out TCCR0A, r16
-	
-	ldi r16, (1 << CS00)
-	out TCCR0B, r16
-	
 	; Load an image into the framebuffer
 	ldi r26, lo8(FRAME_BUFFER)
 	ldi r27, hi8(FRAME_BUFFER)
 
-	ldi r30, lo8(avrlogo)
-	ldi r31, hi8(avrlogo)
+	ldi r30, lo8(tron)
+	ldi r31, hi8(tron)
 
 	ldi r16, FB_HEIGHT
 	ldi r17, FB_WIDTH
@@ -165,7 +148,7 @@ main:
 	ldi r30, lo8(FRAME_BUFFER)
 	ldi r31, hi8(FRAME_BUFFER)
 	
-	; Make a copy of the z register in the y register to refer to later
+	; Make a copy of the z register to the y register to refer to later
 	movw r28, r30
 
 	; Initial condition of the line repeater
@@ -270,7 +253,6 @@ loop:
 		; Lower hsync
 		cbi PORTB, HSYNC                         ; 2
 		
-		; Stall for 14 cycles
 		ldi r21, 0                               ; 94
 		front_porch_stall:
 			inc r21
@@ -284,7 +266,6 @@ loop:
 		
 		; Back Porch, 48 cycles
 
-		; Stall for 34 cycles
 		ldi r21, 0                               ; 31
 		back_porch_stall:
 			inc r21
